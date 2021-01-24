@@ -7,22 +7,24 @@ class Hangman
     lives = 6
     blanks = '_' * secret_word.length
     wrong_guesses = ''
+    turn = 1
     while lives.positive?
       draw_gallows(lives)
       puts "You have #{lives} chance#{'s' if lives > 1} remaining"
       puts "\n#{blanks.split('').join(' ')}\n "
-      guess = get_guess(wrong_guesses)
+      guess = get_guess(turn, lives, secret_word, blanks, wrong_guesses)
       if secret_word.split('').any? { |char| char == guess }
         puts "\n\n#{guess} appears #{secret_word.count(guess)} time#{'s' if secret_word.count(guess) > 1} in the word"
         turn_values = game_turn(secret_word, blanks, guess, wrong_guesses)
         blanks = turn_values[0]
         wrong_guesses = turn_values[1]
         end_game('won', lives, secret_word) if blanks == secret_word
+        turn +=1
       else
         puts "\n\n#{guess} does not appear in the word"
         lives -= 1
         wrong_guesses += guess
-       
+        turn += 1
       end
     end
     draw_gallows(lives)
@@ -48,10 +50,11 @@ class Hangman
     [blanks, wrong_guesses]
   end
 
-  def get_guess(wrong_guesses)
+  def get_guess(turn, lives, secret_word, blanks, wrong_guesses)
     puts "Incorrect guesses: #{wrong_guesses.split('').join(' ')}" unless wrong_guesses.empty?
-    puts 'Guess a letter'
+    puts "Guess a letter#{" - Type \"save\" to save and exit" if turn > 1}"
     guess = gets.chomp.downcase
+    save_data(lives, secret_word, blanks, wrong_guesses) if guess == 'save'
     until guess.length == 1 && ('a'..'z').include?(guess) && !wrong_guesses.include?(guess)
       require_valid_word(guess, wrong_guesses)
       guess = gets.chomp.downcase
@@ -120,6 +123,25 @@ class Hangman
       play_again = gets.chomp.downcase
     end
     play_again == 'y' ? Hangman.new.start : exit
+  end
+
+  def save_data(lives, secret_word, blanks, wrong_guesses)
+    Dir.mkdir('saves') unless Dir.exist?('saves')
+    puts 'What would you like to call this save?'
+    name = gets.chomp.downcase
+    overwrite = ''
+    until overwrite == 'y' || !File.exist?(name)
+      puts "#{name} already exists. Do you want to overwrite thefile? y/n"
+      overwrite = gets.chomp.downcase
+      if overwrite == 'n'
+        put 'What would you like to call the file?'
+        name = gets.chomp.downcase
+      end
+    end
+    File.open("saves/#{name}", 'w') do |file|
+      file.puts [lives, secret_word, blanks, wrong_guesses]
+    end
+    exit
   end
 end
 Hangman.new.start
