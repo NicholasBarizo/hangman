@@ -8,7 +8,9 @@ class Hangman
     blanks = '_' * secret_word.length
     wrong_guesses = ''
     while lives.positive?
+      draw_gallows(lives)
       puts "You have #{lives} chance#{'s' if lives > 1} remaining"
+      puts "\n#{blanks.split('').join(' ')}\n "
       guess = get_guess(wrong_guesses)
       if secret_word.split('').any? { |char| char == guess }
         puts "\n\n#{guess} appears #{secret_word.count(guess)} time#{'s' if secret_word.count(guess) > 1} in the word"
@@ -20,9 +22,10 @@ class Hangman
         puts "\n\n#{guess} does not appear in the word"
         lives -= 1
         wrong_guesses += guess
-        puts "\n#{blanks.split('').join(' ')}\n "
+       
       end
     end
+    draw_gallows(lives)
     end_game('loss', lives, secret_word)
   end
 
@@ -42,7 +45,6 @@ class Hangman
     comparison_outcome = compare_words(secret_word, guess, blanks, wrong_guesses)
     blanks = comparison_outcome[0]
     wrong_guesses = comparison_outcome[1]
-    puts "\n#{blanks.split('').join(' ')}\n "
     [blanks, wrong_guesses]
   end
 
@@ -57,25 +59,45 @@ class Hangman
     guess
   end
 
+  def draw_gallows(lives)
+    head, torso, left_arm, right_arm, left_leg, right_leg = [' '] * 6
+    head = 'O' if lives < 6
+    torso = '|' if lives < 5
+    left_arm = '/' if lives < 4
+    right_arm = '\\' if lives < 3
+    left_leg = '/' if lives < 2
+    right_leg = '\\' if lives < 1
+    display_gallows(head, torso, left_arm, right_arm, left_leg, right_leg)
+  end
+  
+  def display_gallows(head, torso, left_arm, right_arm, left_leg, right_leg)
+    puts ' __________'
+    puts ' |  /  |'
+    puts " | /   #{head}"
+    puts " |/   #{left_arm}#{torso}#{right_arm}"
+    puts " |   #{left_arm} #{torso} #{right_arm}"
+    puts " |     #{torso}"
+    puts " |    #{left_leg} #{right_leg}"
+    puts " |   #{left_leg}   #{right_leg}"
+    puts ' |'
+    puts ' |'
+  end
+
   def require_valid_word(guess, wrong_guesses)
     puts 'Guess a letter' unless guess.length == 1
     puts 'The word only contains letters' unless guess.split('').all? { |char| ('a'..'z').include? char }
-    puts "You already guessed #{guess} incorrectly" unless wrong_guesses.include?(guess)
+    puts "You already guessed #{guess} incorrectly" if wrong_guesses.include?(guess) && !guess.empty?
   end
 
   def compare_words(secret_word, guess, blanks, wrong_guesses)
     modified_blanks = blanks
     blanks.split('').each_with_index do |_, blanks_index|
       secret_word.split('').each_with_index do |secret_char, secret_index|
-        if secret_char == guess && blanks_index == secret_index && !wrong_guesses.include?(guess)
+        if secret_char == guess && blanks_index == secret_index 
           modified_blanks = modified_blanks.split('').map.with_index do |modify_char, modify_index|
             modify_index == secret_index ? guess : modify_char
           end
           modified_blanks = modified_blanks.join('')
-        # elsif secret_word.split('').none? { |char| char == guess }
-        #   # blanks_index == secret_index && !wrong_guesses.include?(guess)
-        #   puts "#{blanks_index} #{secret_index} "
-        #   wrong_guesses += guess
         end
       end
     end
@@ -90,7 +112,7 @@ class Hangman
         puts "You have won with #{lives} lives left\nPlay again? y/n"
       end
     else
-      puts "You have lost! The word was #{word}\nPlay Again?"
+      puts "You are out of chances! The word was #{word}\nPlay Again?"
     end
     play_again = gets.chomp.downcase
     until %w[y n].include?(play_again)
