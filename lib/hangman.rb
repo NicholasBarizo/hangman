@@ -2,11 +2,12 @@ class Hangman
   def initalize; end
 
   def start
-    secret_word = pick_word.chomp
-    puts secret_word
-    lives = 6
-    blanks = '_' * secret_word.length
-    wrong_guesses = ''
+    game_data = clean_save_data(prompt_load)
+    lives = game_data[0]
+    secret_word = game_data[1]
+    blanks = game_data[2]
+    wrong_guesses = game_data[3]
+
     turn = 1
     while lives.positive?
       draw_gallows(lives)
@@ -19,15 +20,13 @@ class Hangman
         blanks = turn_values[0]
         wrong_guesses = turn_values[1]
         end_game('won', lives, secret_word) if blanks == secret_word
-        turn +=1
       else
         puts "\n\n#{guess} does not appear in the word"
         lives -= 1
         wrong_guesses += guess
-        turn += 1
       end
+      turn += 1
     end
-    draw_gallows(lives)
     end_game('loss', lives, secret_word)
   end
 
@@ -108,6 +107,7 @@ class Hangman
   end
 
   def end_game(outcome, lives, word)
+    draw_gallows(lives)
     if outcome == 'won'
       if lives == 1
         puts "You have won with 1 life left\nPlay again? y/n"
@@ -115,7 +115,7 @@ class Hangman
         puts "You have won with #{lives} lives left\nPlay again? y/n"
       end
     else
-      puts "You are out of chances! The word was #{word}\nPlay Again?"
+      puts "You are out of chances! The word was #{word}\nPlay Again? y/n"
     end
     play_again = gets.chomp.downcase
     until %w[y n].include?(play_again)
@@ -127,21 +127,72 @@ class Hangman
 
   def save_data(lives, secret_word, blanks, wrong_guesses)
     Dir.mkdir('saves') unless Dir.exist?('saves')
-    puts 'What would you like to call this save?'
-    name = gets.chomp.downcase
-    overwrite = ''
-    until overwrite == 'y' || !File.exist?(name)
-      puts "#{name} already exists. Do you want to overwrite thefile? y/n"
-      overwrite = gets.chomp.downcase
-      if overwrite == 'n'
-        put 'What would you like to call the file?'
-        name = gets.chomp.downcase
-      end
-    end
+    name = get_save_name
+    name = check_duplicate_name(name)
     File.open("saves/#{name}", 'w') do |file|
       file.puts [lives, secret_word, blanks, wrong_guesses]
     end
     exit
+  end
+
+  def get_save_name
+    puts 'What would you like to call this save?'
+    name = gets.chomp
+    until name.split('').all? { |char| ('a'..'z').include?(char) || ('A'..'Z').include?(char) || char == ' '}
+      puts name == '' ? 'The name can not be empty' : 'The name can not contain any special characters'
+      name = gets.chomp
+    end
+    name
+  end
+
+  def check_duplicate_name(name)
+    overwrite = ''
+    until overwrite == 'y' || !File.exist?("saves/#{name}")
+      puts "#{name} already exists. Do you want to overwrite this save? y/n"
+      overwrite = gets.chomp.downcase
+      if overwrite == 'n'
+        puts 'What would you like to call this save?'
+        name = get_save_name
+      end
+    end
+    name
+  end
+
+  def prompt_load
+    puts 'Would you like to load a save? y/n'
+    load_save = gets.chomp.downcase
+    until %w[y n].include?(load_save)
+      puts 'Would you like to load a save? y/n'
+      load_save = gets.chomp.downcase
+    end
+    load_save
+  end
+
+  def load_file
+    puts 'Which save would you like to load?'
+    puts Dir.each_child('saves') { |file| puts file}
+    load_file = gets.chomp
+    until Dir.entries('saves').include?(load_file)
+      puts "#{load_file} does not exist"
+      load_file = gets.chomp
+    end
+    File.open("saves/#{load_file}", 'r')
+  end
+
+  def clean_save_data(load_data)
+    if load_data == 'y'
+      saved_data = load_file
+      lives = saved_data.readline.chomp.to_i
+      secret_word = saved_data.readline.chomp
+      blanks = saved_data.readline.chomp
+      wrong_guesses = saved_data.readline.chomp
+    else
+      secret_word = pick_word.chomp
+      lives = 6
+      blanks = '_' * secret_word.length
+      wrong_guesses = ''
+    end
+    [lives, secret_word, blanks, wrong_guesses]
   end
 end
 Hangman.new.start
