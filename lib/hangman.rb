@@ -7,15 +7,16 @@ class Hangman
     lives = 6
     blanks = '_' * secret_word.length
     while lives.positive?
-      puts "You have #{lives} chance#{'s' if lives == 1} remaining"
+      puts "You have #{lives} chance#{'s' if lives > 1} remaining"
       guess = get_guess
       if secret_word.split('').any? { |char| char == guess }
         blanks = game_turn(secret_word, blanks, guess)
+        end_game('won', lives, secret_word) if blanks == secret_word
       else
         lives -= 1
       end
     end
-    lose(secret_word)
+    end_game('loss', lives, secret_word)
   end
 
   private
@@ -35,7 +36,7 @@ class Hangman
     puts "\n#{blanks.split('').join(' ')}\n "
     blanks
   end
-  
+
   def get_guess()
     puts 'Guess a letter'
     guess = gets.chomp.downcase
@@ -56,7 +57,7 @@ class Hangman
     blanks.split('').each_with_index do |_, blanks_index|
       secret_word.split('').each_with_index do |secret_char, secret_index|
         if secret_char == guess && blanks_index == secret_index
-          modified_blanks = modified_blanks.split('').map.with_index do |modify_char, modify_index |
+          modified_blanks = modified_blanks.split('').map.with_index do |modify_char, modify_index|
             modify_index == secret_index ? guess : modify_char
           end
           modified_blanks = modified_blanks.join('')
@@ -66,8 +67,22 @@ class Hangman
     modified_blanks
   end
 
-  def lose(word)
-    puts "You have lost! The word was #{word}\nPlay Again?"
+  def end_game(outcome, lives, word)
+    if outcome == 'won'
+      if lives == 1
+        puts "You have won with 1 life left\nPlay again? y/n"
+      else
+        puts "You have won with #{lives} lives left\nPlay again? y/n"
+      end
+    else
+      puts "You have lost! The word was #{word}\nPlay Again?"
+    end
+    play_again = gets.chomp.downcase
+    until %w[y n].include?(play_again)
+      puts 'Play again? y/n'
+      play_again = gets.chomp.downcase
+    end
+    play_again == 'y' ? Hangman.new.start : exit
   end
 end
 Hangman.new.start
