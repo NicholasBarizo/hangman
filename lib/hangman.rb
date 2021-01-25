@@ -169,12 +169,13 @@ class Hangman
   end
 
   def load_file
+    Dir.mkdir('saves') unless Dir.exist?('saves')
     puts 'Which save would you like to load?'
     puts Dir.each_child('saves') { |file| puts file}
     load_file = gets.chomp
     until Dir.entries('saves').include?(load_file)
       puts "#{load_file} does not exist" unless load_file.empty?
-      puts 'The filename can not be empty' if load_file.empty?
+      puts 'The filename can not be empty' if load_file.empty? 
       load_file = gets.chomp
     end
     File.open("saves/#{load_file}", 'r')
